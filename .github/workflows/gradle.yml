@@ -46,6 +46,11 @@ jobs:
       # their outputs; pull requests only read. Set explicitly: the setup-gradle token makes the
       # micronaut-build settings plugin detect CI on every build, which would otherwise push.
       ORG_GRADLE_PROJECT_cachePush: ${{ github.event_name == 'push' }}
+      # Fork: this repository publishes to GitHub Packages (publish-github-packages.yml), never to
+      # Maven Central. Upstream publishes its snapshots from publish-snapshot.yml, so only the
+      # documentation deployment below needs guarding: it is skipped when no GH_TOKEN with write
+      # access to the documentation target repository is configured.
+      GH_TOKEN_AVAILABLE: ${{ secrets.GH_TOKEN != '' }}
     steps:
        # https://github.com/actions/virtual-environments/issues/709
       - name: Remove system JDKs
@@ -140,7 +145,7 @@ jobs:
           if_false: ${{ github.repository }}
 
       - name: "📑 Publish to Github Pages"
-        if: success() && github.event_name == 'push' && matrix.java == '25'
+        if: success() && github.event_name == 'push' && matrix.java == '25' && env.GH_TOKEN_AVAILABLE == 'true'
         uses: micronaut-projects/github-pages-deploy-action@76d63aafbab7108d74e83be4e5b3b0501382e829 # master
         env:
           TARGET_REPOSITORY: ${{ steps.docs_target.outputs.value }}
